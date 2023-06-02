@@ -1,19 +1,38 @@
-name: Calculator Pipeline
-on: [push]
+name: Build and Test
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
 jobs:
   build:
+    name: Build and Test
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
-    - name: Build and test
+    - uses: actions/checkout@v2 
+
+    - name: Go version
+      run: go version
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Build
+      run: go build -v .
+
+    - name: Test
       run: |
-        go test ./...
-    - name: Deploy
-      uses: appleboy/ssh-action@master
+        go test -v -coverprofile=coverage.txt -covermode=atomic
+
+    - name: Upload Coverage
+      uses: actions/upload-artifact@v2
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        password: ${{ secrets.PASSWORD }}
-        script: |
-          cd /var/www/calculator
-          git pull origin main
+        name: coverage
+        path: ./coverage.txt
+      
+    - name: Upload Binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: binary
+        path: ./count
